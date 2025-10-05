@@ -1,0 +1,95 @@
+/* === Style général === */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom right, #f5faff, #dbe9ff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* === Conteneur de connexion === */
+.login-container {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 400px;
+    text-align: center;
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+/* Animation d’apparition */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Logo === */
+.login-container img {
+    width: 80px;
+    margin-bottom: 20px;
+}
+
+/* === Titre === */
+.login-container h1 {
+    margin-bottom: 20px;
+    color: #1e4e8c;
+    font-size: 28px;
+}
+
+/* === Champs de formulaire === */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #1e4e8c;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #c5d5f5;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #1e4e8c;
+    box-shadow: 0 0 5px rgba(30, 78, 140, 0.5);
+}
+
+/* === Bouton de connexion === */
+.btn-login {
+    background: #1e4e8c;
+    color: #fff;
+    padding: 12px;
+    border: none;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-login:hover {
+    background: #163a6a;
+}
+
+/* === Message d’erreur === */
+.error {
+    background: #ffdddd;
+    color: #a10000;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
