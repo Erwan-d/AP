@@ -28,8 +28,8 @@ body {
 
 /* === Logo === */
 .login-container img {
-    width: 80px;
-    margin-bottom: 20px;
+    width: 200px; /* augmente la taille ici */
+    margin-bottom: 50px;
 }
 
 /* === Titre === */
