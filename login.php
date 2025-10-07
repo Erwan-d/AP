@@ -5,26 +5,36 @@ require_once 'config.php';
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim($_POST['email']);
+    $personnel_name = trim($_POST['personnel_name']);
     $password = trim($_POST['password']);
 
-    if (!empty($email) && !empty($password)) {
-        $sql = "SELECT * FROM personnels WHERE email = :email";
+    if (!empty($personnel_name) && !empty($password)) {
+        // Requête pour récupérer les infos du personnel avec le rôle associé
+        $sql = "SELECT p.*, r.role_name 
+                FROM personnels p
+                JOIN roles r ON p.role_id = r.role_id
+                WHERE p.personnel_name = :personnel_name";
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':personnel_name', $personnel_name);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['mot_de_passe'])) {
+            // Stocker les infos en session
             $_SESSION['personnel_id'] = $user['personnel_id'];
-            $_SESSION['nom'] = $user['nom'];
-            $_SESSION['prenom'] = $user['prenom'];
+            $_SESSION['personnel_name'] = $user['personnel_name'];
             $_SESSION['role_id'] = $user['role_id'];
+            $_SESSION['role_name'] = $user['role_name'];
 
-            header("Location: dashboard.php");
+            // Exemple : redirection différente selon le rôle
+            if ($user['role_name'] === 'admin') {
+                header("Location: admin_dashboard.php");
+            } else {
+                header("Location: dashboard.php");
+            }
             exit();
         } else {
-            $error = "Email ou mot de passe incorrect.";
+            $error = "Nom ou mot de passe incorrect.";
         }
     } else {
         $error = "Veuillez remplir tous les champs.";
@@ -51,8 +61,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <form method="POST" action="">
             <div class="form-group">
-                <label for="email">Adresse email</label>
-                <input type="email" id="email" name="email" placeholder="exemple@clinique.fr" required>
+                <label for="personnel_name">Nom du personnel</label>
+                <input type="text" id="personnel_name" name="personnel_name" placeholder="Votre nom" required>
             </div>
 
             <div class="form-group">
