@@ -14,8 +14,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "Captcha incorrect. Veuillez réessayer.";    
     } elseif (!empty($personnel_name) && !empty($password)) {
         $sql = "SELECT p.*, r.role_name 
-                FROM personnels p
-                JOIN roles r ON p.role_id = r.role_id
+                FROM ap_personnels p
+                JOIN ap_roles r ON p.role_id = r.role_id
                 WHERE p.personnel_name = :personnel_name";
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':personnel_name', $personnel_name, PDO::PARAM_STR);

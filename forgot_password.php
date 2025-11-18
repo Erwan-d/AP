@@ -8,7 +8,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!empty($personnel_name)) {
         // Vérifie si le personnel existe
-        $stmt = $pdo->prepare("SELECT personnel_id, personnel_name FROM personnels WHERE personnel_name = ?");
+        $stmt = $pdo->prepare("SELECT personnel_id, personnel_name FROM ap_personnels WHERE personnel_name = ?");
         $stmt->execute([$personnel_name]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $expires = date("Y-m-d H:i:s", strtotime('+1 hour'));
 
             // Enregistre le token dans la base
-            $update = $pdo->prepare("UPDATE personnels SET reset_token = ?, reset_expires = ? WHERE personnel_id = ?");
+            $update = $pdo->prepare("UPDATE ap_personnels SET reset_token = ?, reset_expires = ? WHERE personnel_id = ?");
             $update->execute([$token, $expires, $user['personnel_id']]);
 
             // Génère le lien de réinitialisation
