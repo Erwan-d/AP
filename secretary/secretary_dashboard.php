@@ -22,7 +22,7 @@ $nom = isset($_SESSION['nom']) ? $_SESSION['nom'] : 'Secrétaire';
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - Secrétaire</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_secretary.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -41,7 +41,7 @@ $nom = isset($_SESSION['nom']) ? $_SESSION['nom'] : 'Secrétaire';
             </ul>
 
             <div class="actions">
-                <a href="pre_admission.php" class="btn-action">Nouvelle pré-admission</a>
+                <a href="preadmission.php" class="btn-action">Nouvelle pré-admission</a>
                 <a href="patients.php" class="btn-action"> Liste des patients</a>
                 <a href="rdv.php" class="btn-action"> Gestion des RDV</a>
             </div>
