@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once 'systems/config.php';
 
 $error = "";
 
@@ -32,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 header("Location: admin_dashboard.php");
                 exit();
             } elseif ($user['role_name'] === 'secretaire') {
-                header("Location: secretary_dashboard.php");
+                header("Location: secretary/secretary_dashboard.php");
                 exit();
             } else {
                 $error = "Votre rôle n'est pas autorisé à accéder au système.";
@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 <div class="login-container">
-    <img src="LPFS_logo.png" alt="Logo Clinique">
+    <img src="images/LPFS_logo.png" alt="Logo Clinique">
     <h1>Connexion</h1>
 
     <?php if ($error): ?>
@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="form-group">
             <label>Captcha :</label><br>
-            <img src="captcha.php" alt="Captcha"><br>
+            <img src="systems/captcha.php" alt="Captcha"><br>
             <input type="text" name="captcha" placeholder="Entrez le code ci-dessus" required>
         </div>
 

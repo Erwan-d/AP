@@ -3,13 +3,13 @@ session_start();
 
 // Vérifie que l'utilisateur est connecté
 if (!isset($_SESSION['personnel_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 
 // Vérifie que c’est bien une secrétaire (et non un admin)
 if ($_SESSION['role_id'] == 1) {
-    header("Location: admin_dashboard.php");
+    header("Location: ../admin/admin_dashboard.php");
     exit();
 }
 
@@ -28,7 +28,7 @@ $nom = isset($_SESSION['nom']) ? $_SESSION['nom'] : 'Secrétaire';
     <div class="dashboard-container">
         <header>
             <h1>Bienvenue <?= htmlspecialchars($nom) ?> </h1>
-            <a href="logout.php" class="logout-btn">Se déconnecter</a>
+            <a href="../logout.php" class="logout-btn">Se déconnecter</a>
         </header>
 
         <main>

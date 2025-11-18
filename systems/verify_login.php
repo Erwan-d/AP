@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once 'systems/config.php';
 
 // Vérifier que le formulaire a bien été soumis
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -24,9 +24,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             // Redirection selon le rôle
             if ($user['role_id'] == 1) {
-                header("Location: admin_dashboard.php"); // rôle admin
+                header("Location: ../admin/admin_dashboard.php"); // rôle admin
             } else {
-                header("Location: secretary_dashboard.php"); // rôle secrétaire
+                header("Location: ../secretary/secretary_dashboard.php"); // rôle secrétaire
             }
             exit();
         } else {
@@ -36,10 +36,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     } else {
         $_SESSION['login_error'] = "Veuillez remplir tous les champs.";
-        header("Location: login.php");
+        header("Location: ../login.php");
         exit();
     }
 } else {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
