@@ -10,217 +10,262 @@ if (!isset($_SESSION['personnel_id'])) {
 $error = "";
 $success = "";
 
-// Couverture Social
-$insurance_number = $_POST['insurance_number'] ?? '';
-$insurance_name = $_POST['insurance_name'] ?? '';
-$social_org = $_POST['social_org'] ?? '';
+//////////////////////////////////////////////
+//             UTILITAIRES
+//////////////////////////////////////////////
 
-if (!empty($insurance_number) && !preg_match('/^\d{4,6}$/', $insurance_number)) {
-    $error = "Le numéro d’assurance complémentaire doit contenir uniquement 4 à 6 chiffres.";
-}
-
-
-// Récupération patients existants
-$patients = $pdo->query("SELECT social_number, lastname, firstname FROM ap_patient ORDER BY lastname")->fetchAll(PDO::FETCH_ASSOC);
-
-// Récupération chambres
-$chambres = $pdo->query("SELECT chambre_id, type_chambre, private_room FROM ap_chambre ORDER BY chambre_id")->fetchAll(PDO::FETCH_ASSOC);
-
-// Vérifier NIR
-function isValidNIR($nir) {
+function isValidNIR($nir)
+{
     $nir = str_replace(' ', '', $nir);
-    if (!preg_match('/^\d{15}$/', $nir)) return false;
-    $sexe = (int)$nir[0];
-    if ($sexe !== 1 && $sexe !== 2) return false;
-    $month = (int)substr($nir, 3, 2);
-    if ($month < 1 || $month > 12) return false;
-    return true;
+    return preg_match('/^[12]\d{2}(0[1-9]|1[0-2])\d{10}$/', $nir);
 }
 
-// Vérifier disponibilité chambre
-function isChambreAvailable($pdo, $chambre_id, $date) {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM ap_admission WHERE chambre_id = :chambre_id AND hospitalisation_date = :date");
-    $stmt->execute([':chambre_id' => $chambre_id, ':date' => $date]);
+function isChambreAvailable($pdo, $chambre_id, $date)
+{
+    $stmt = $pdo->prepare("SELECT COUNT(*) 
+                           FROM ap_admission 
+                           WHERE chambre_id = :id 
+                           AND hospitalisation_date = :date");
+    $stmt->execute([':id' => $chambre_id, ':date' => $date]);
     return $stmt->fetchColumn() == 0;
 }
 
-// ------------------------------------------------------
-//  TRAITEMENT DU FORMULAIRE
-// ------------------------------------------------------
+//////////////////////////////////////////////
+//             RÉCUPÉRATION DONNÉES
+//////////////////////////////////////////////
+
+$patients = $pdo->query("SELECT social_number, lastname, firstname 
+                         FROM ap_patient ORDER BY lastname")
+                ->fetchAll(PDO::FETCH_ASSOC);
+
+$chambres = $pdo->query("SELECT chambre_id, type_chambre, private_room 
+                         FROM ap_chambre ORDER BY chambre_id")
+                ->fetchAll(PDO::FETCH_ASSOC);
+
+//////////////////////////////////////////////
+//             TRAITEMENT FORMULAIRE
+//////////////////////////////////////////////
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $new_patient = $_POST['new_patient'] ?? 0;
+    $new_patient = $_POST['new_patient'] ?? '0';
 
-    // --- Création patient si nouveau ---
-    if ($new_patient == 1) {
-        $social_number = trim($_POST['social_number'] ?? '');
-        $lastname = trim($_POST['lastname'] ?? '');
-        $firstname = trim($_POST['firstname'] ?? '');
-        $birthdate = $_POST['birthdate'] ?? '';
-        $phone = trim($_POST['phone'] ?? '');
-        $insurance_number = trim($_POST['insurance_number'] ?? '');
-        $insurance_name = trim($_POST['insurance_name'] ?? '');
+    //////////////////////////////////////////////
+    //        CRÉATION NOUVEAU PATIENT
+    //////////////////////////////////////////////
+    if ($new_patient === '1') {
 
-        // --- Nettoyage données ---
-        $social_number = preg_replace('/\D/', '', $social_number);
-        $phone = preg_replace('/[^\d+]/', '', $phone);
-        $insurance_number = preg_replace('/\D/', '', $insurance_number);
+        // Données patient
+        $social_number = preg_replace('/\D/', '', $_POST['social_number'] ?? '');
+        $lastname      = trim($_POST['lastname'] ?? '');
+        $firstname     = trim($_POST['firstname'] ?? '');
+        $birthdate     = $_POST['birthdate'] ?? '';
+        $phone         = preg_replace('/[^\d+]/', '', $_POST['phone'] ?? '');
+        $is_minor      = isset($_POST['is_minor']) ? 1 : 0;
 
-        // --- Vérifications ---
+        // Champs BDD manquants dans ton code initial
+        $sexe          = $_POST['sexe'] ?? null;
+        $email         = trim($_POST['email'] ?? '');
+        $address       = trim($_POST['address'] ?? '');
+
+        // --- Vérifications
         if (!isValidNIR($social_number)) {
-            $error = "Numéro de sécurité sociale invalide ou incohérent.";
+            $error = "Numéro de sécurité sociale invalide.";
         } elseif (!$lastname || !$firstname || !$birthdate) {
-            $error = "Veuillez remplir tous les champs du patient.";
-        } elseif (!empty($phone) && !preg_match('/^\+?\d{10,15}$/', $phone)) {
-            $error = "Numéro de téléphone incorrect (10 à 15 chiffres, + optionnel).";
-        } elseif (!empty($insurance_number) && !preg_match('/^\d{4,6}$/', $insurance_number)) {
-            $error = "Le numéro d’assurance complémentaire doit contenir uniquement 4 à 6 chiffres.";
+            $error = "Veuillez remplir tous les champs obligatoires.";
         } else {
-            // Vérification doublon patient
+            // Vérifier si patient existe déjà
             $check = $pdo->prepare("SELECT COUNT(*) FROM ap_patient WHERE social_number = ?");
             $check->execute([$social_number]);
-            if ($check->fetchColumn() > 0) $error = "Un patient avec ce numéro existe déjà.";
+            if ($check->fetchColumn() > 0) {
+                $error = "Un patient avec ce numéro existe déjà.";
+            }
         }
 
-        // --- Insertion patient ---
+        // --- Insertion patient
         if (!$error) {
-            $stmt = $pdo->prepare("INSERT INTO ap_patient (social_number, lastname, firstname, birthdate, phone)
-                                   VALUES (:social, :lastname, :firstname, :birthdate, :phone)");
+            $stmt = $pdo->prepare("
+                INSERT INTO ap_patient 
+                (social_number, lastname, firstname, birthdate, phone, sexe, email, address)
+                VALUES (:social, :ln, :fn, :birth, :phone, :sexe, :email, :address)
+            ");
             $stmt->execute([
-                ':social' => $social_number,
-                ':lastname' => $lastname,
-                ':firstname' => $firstname,
-                ':birthdate' => $birthdate,
-                ':phone' => $phone
+                ':social'  => $social_number,
+                ':ln'      => $lastname,
+                ':fn'      => $firstname,
+                ':birth'   => $birthdate,
+                ':phone'   => $phone,
+                ':sexe'    => $sexe,
+                ':email'   => $email,
+                ':address' => $address
             ]);
+
             $patient_social = $social_number;
         }
 
+    //////////////////////////////////////////////
+    //        PATIENT EXISTANT
+    //////////////////////////////////////////////
     } else {
         $patient_social = $_POST['patient_social'] ?? '';
-        if (!$patient_social) $error = "Veuillez sélectionner un patient existant.";
+        if (!$patient_social) {
+            $error = "Veuillez sélectionner un patient.";
+        }
     }
 
-    // --- Admission ---
+    //////////////////////////////////////////////
+    //          ADMISSION
+    //////////////////////////////////////////////
     if (!$error) {
-        $admission_type = trim($_POST['admission_type'] ?? '');
-        $hospitalisation_date = $_POST['hospitalisation_date'] ?? '';
-        $intervention_time = $_POST['intervention_time'] ?? null;
-        $chambre_id = $_POST['chambre_id'] ?? null;
-        $private_room = isset($_POST['private_room']) ? 1 : 0;
-        $reason = trim($_POST['reason'] ?? '');
-        $notes = trim($_POST['notes'] ?? '');
-        $is_minor = isset($_POST['is_minor']) ? 1 : 0;
+
+        $admission_type        = trim($_POST['admission_type'] ?? '');
+        $hospitalisation_date  = $_POST['hospitalisation_date'] ?? '';
+        $intervention_time     = $_POST['intervention_time'] ?? null;
+        $chambre_id            = $_POST['chambre_id'] ?? null;
+        $reason                = trim($_POST['reason'] ?? '');
+        $notes                 = trim($_POST['notes'] ?? '');
 
         if ($hospitalisation_date < date('Y-m-d')) {
             $error = "Date d’hospitalisation invalide.";
         } elseif ($chambre_id && !isChambreAvailable($pdo, $chambre_id, $hospitalisation_date)) {
             $error = "Chambre déjà réservée.";
-        } elseif (!$admission_type || !$hospitalisation_date) {
-            $error = "Veuillez remplir tous les champs d’admission.";
-        } else {
+        }
 
-            // --- Couverture sociale ---
-            $social_org = $_POST['social_org'] ?? null;
-            $is_assured = isset($_POST['is_assured']) ? 1 : 0;
-            $ald = isset($_POST['ald']) ? 1 : 0;
+        //////////////////////////////////////////////
+        //        COUVERTURE SOCIALE
+        //////////////////////////////////////////////
+        if (!$error) {
+
+            $social_org       = trim($_POST['social_org'] ?? '');
+            $is_assured       = isset($_POST['is_assured']) ? 1 : 0;
+            $ald              = isset($_POST['ald']) ? 1 : 0;
+            $insurance_number = preg_replace('/\D/', '', $_POST['insurance_number'] ?? '');
+            $insurance_name   = trim($_POST['insurance_name'] ?? '');
+            $prise_en_charge = $_POST['prise_en_charge'] ?? null; // présent dans ta BDD
 
             $covCheck = $pdo->prepare("SELECT COUNT(*) FROM ap_couverture_sociale WHERE social_number = ?");
             $covCheck->execute([$patient_social]);
+
             if ($covCheck->fetchColumn() == 0) {
-                $insertCov = $pdo->prepare("INSERT INTO ap_couverture_sociale 
-                    (social_number, social_org, is_assured, ald, insurance_number, insurance_name)
-                    VALUES (:social, :org, :assured, :ald, :num, :name)");
+                $insertCov = $pdo->prepare("
+                    INSERT INTO ap_couverture_sociale
+                    (social_number, social_org, is_assured, ald, insurance_number, insurance_name, prise_en_charge)
+                    VALUES (:s, :org, :ass, :ald, :num, :name, :pec)
+                ");
                 $insertCov->execute([
-                    ':social' => $patient_social,
-                    ':org' => $social_org,
-                    ':assured' => $is_assured,
-                    ':ald' => $ald,
-                    ':num' => $insurance_number,
-                    ':name' => $insurance_name
+                    ':s'    => $patient_social,
+                    ':org'  => $social_org,
+                    ':ass'  => $is_assured,
+                    ':ald'  => $ald,
+                    ':num'  => $insurance_number,
+                    ':name' => $insurance_name,
+                    ':pec'  => $prise_en_charge
                 ]);
             }
+        }
 
-            // --- Personnes de contact ---
+        //////////////////////////////////////////////
+        //        PERSONNES DE CONTACT
+        //////////////////////////////////////////////
+        if (!$error) {
+
             $contacts = [
-                ['type_contact' => 'confiance', 'name' => $_POST['contact_confiance_nom'] ?? null, 'firstname' => $_POST['contact_confiance_prenom'] ?? null, 'phone' => $_POST['contact_confiance_tel'] ?? null],
-                ['type_contact' => 'prévenir', 'name' => $_POST['contact_prevenir_nom'] ?? null, 'firstname' => $_POST['contact_prevenir_prenom'] ?? null, 'phone' => $_POST['contact_prevenir_tel'] ?? null]
+                [
+                    'type'      => 'confiance',
+                    'name'      => trim($_POST['contact_confiance_nom'] ?? ''),
+                    'firstname' => trim($_POST['contact_confiance_prenom'] ?? ''),
+                    'phone'     => trim($_POST['contact_confiance_tel'] ?? '')
+                ],
+                [
+                    'type'      => 'prévenir',
+                    'name'      => trim($_POST['contact_prevenir_nom'] ?? ''),
+                    'firstname' => trim($_POST['contact_prevenir_prenom'] ?? ''),
+                    'phone'     => trim($_POST['contact_prevenir_tel'] ?? '')
+                ]
             ];
-            foreach ($contacts as $contact) {
-                if ($contact['name'] && $contact['phone']) {
-                    $idContact = substr($patient_social, 0, 13) . rand(10, 99);
-                    $pdo->prepare("INSERT INTO ap_personne_contact (social_number, type_contact, name, firstname, phone)
-                                   VALUES (:social, :type, :nom, :prenom, :phone)")
-                        ->execute([
-                            ':social' => $idContact,
-                            ':type' => $contact['type_contact'],
-                            ':nom' => $contact['name'],
-                            ':prenom' => $contact['firstname'],
-                            ':phone' => $contact['phone']
-                        ]);
+
+            foreach ($contacts as $c) {
+                if ($c['name'] && $c['phone']) {
+                    $pdo->prepare("
+                        INSERT INTO ap_personne_contact 
+                        (social_number, type_contact, name, firstname, phone)
+                        VALUES (:s, :t, :n, :f, :p)
+                    ")->execute([
+                        ':s' => $patient_social,
+                        ':t' => $c['type'],
+                        ':n' => $c['name'],
+                        ':f' => $c['firstname'],
+                        ':p' => $c['phone']
+                    ]);
                 }
             }
+        }
 
-            // --- Gestion documents PDF ---
+        //////////////////////////////////////////////
+        //        DOCUMENTS
+        //////////////////////////////////////////////
+        if (!$error) {
+
             $allowedTypes = ['application/pdf'];
-            $docs = [
-                'id_card' => 0,
-                'vital_card' => 0,
-                'insurance_card' => 0,
-                'livret_famille' => 0
-            ];
+            $docs = ['id_card', 'vital_card', 'insurance_card', 'livret_famille'];
 
-            foreach ($docs as $doc => &$flag) {
+            foreach ($docs as $doc) {
                 if (!empty($_FILES[$doc]['tmp_name'])) {
-                    $tmp = $_FILES[$doc]['tmp_name'];
-                    $type = mime_content_type($tmp);
-                    if (in_array($type, $allowedTypes)) {
-                        $file_data = file_get_contents($tmp);
-                        $flag = 1;
-                        $pdo->prepare("INSERT INTO ap_documents (social_number, doc_type, file_data, id_card, vital_card, insurance_card, livret_famille)
-                                       VALUES (:social, :type, :data, :id_card, :vital, :mutuelle, :livret)")
-                            ->execute([
-                                ':social' => $patient_social,
-                                ':type' => $doc,
-                                ':data' => $file_data,
-                                ':id_card' => $docs['id_card'],
-                                ':vital' => $docs['vital_card'],
-                                ':mutuelle' => $docs['insurance_card'],
-                                ':livret' => $docs['livret_famille']
-                            ]);
-                    } else {
-                        $error = "Le fichier fourni pour $doc doit être un PDF.";
+                    $type = mime_content_type($_FILES[$doc]['tmp_name']);
+
+                    // Vérification obligatoire livret de famille si mineur
+                    if ($is_minor && empty($_FILES['livret_famille']['tmp_name'])) {
+                      $error = "Le livret de famille est obligatoire pour un patient mineur.";
+                  }
+
+                    if (!in_array($type, $allowedTypes)) {
+                        $error = "Le fichier $doc doit être un PDF.";
                         break;
                     }
+
+
+                    // Stockage propre
+                    $file_data = file_get_contents($_FILES[$doc]['tmp_name']);
+
+                    $pdo->prepare("
+                        INSERT INTO ap_documents (social_number, doc_type, file_data)
+                        VALUES (:s, :t, :d)
+                    ")->execute([
+                        ':s' => $patient_social,
+                        ':t' => $doc,
+                        ':d' => $file_data
+                    ]);
                 }
             }
+        }
 
-            if ($is_minor && !$docs['livret_famille']) {
-                $error = "Le livret de famille est obligatoire pour un mineur.";
-            }
+        //////////////////////////////////////////////
+        //        INSERTION ADMISSION
+        //////////////////////////////////////////////
+        if (!$error) {
+            $stmt = $pdo->prepare("
+                INSERT INTO ap_admission
+                (admission_type, hospitalisation_date, intervention_time, private_room, reason, notes, statut, personnel_name, patient_social, chambre_id)
+                VALUES (:t, :hd, :it, :pr, :r, :n, 'pré-admission', :p, :s, :c)
+            ");
+            $stmt->execute([
+                ':t' => $admission_type,
+                ':hd' => $hospitalisation_date,
+                ':it' => $intervention_time,
+                ':pr' => isset($_POST['private_room']) ? 1 : 0,
+                ':r'  => $reason,
+                ':n'  => $notes,
+                ':p'  => $_SESSION['personnel_name'],
+                ':s'  => $patient_social,
+                ':c'  => $chambre_id
+            ]);
 
-            // --- Enregistrement admission ---
-            if (!$error) {
-                $stmt = $pdo->prepare("INSERT INTO ap_admission 
-                    (admission_type, hospitalisation_date, intervention_time, private_room, reason, notes, statut, personnel_name, patient_social, chambre_id)
-                    VALUES (:type, :date, :time, :private, :reason, :notes, 'pré-admission', :personnel, :social, :chambre)");
-                $stmt->execute([
-                    ':type' => $admission_type,
-                    ':date' => $hospitalisation_date,
-                    ':time' => $intervention_time ?: null,
-                    ':private' => $private_room,
-                    ':reason' => $reason,
-                    ':notes' => $notes,
-                    ':personnel' => $_SESSION['personnel_name'],
-                    ':social' => $patient_social,
-                    ':chambre' => $chambre_id ?: null
-                ]);
-                $success = "Pré-admission enregistrée avec succès et documents stockés !";
-            }
+            $success = "Pré-admission enregistrée avec succès !";
         }
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -341,6 +386,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 <script>
+// ------------------------------
+// Barre de progression
+// ------------------------------
 const form = document.getElementById('admissionForm');
 const progressBar = document.getElementById('progress-bar');
 
@@ -353,41 +401,83 @@ form.addEventListener('input', () => {
   progressBar.innerText = percent + '%';
 });
 
-// Toggle nouveau / existant
+
+// ------------------------------
+// GESTION PATIENT NOUVEAU / EXISTANT
+// ------------------------------
 document.querySelectorAll('input[name="new_patient"]').forEach(el => {
   el.addEventListener('change', function() {
-    document.getElementById('new_patient_fields').style.display = this.value === '1' ? 'block' : 'none';
-    document.getElementById('existing_patient').style.display = this.value === '0' ? 'block' : 'none';
+    const isNew = this.value === '1';
+
+    document.getElementById('new_patient_fields').style.display = isNew ? 'block' : 'none';
+    document.getElementById('existing_patient').style.display = isNew ? 'none' : 'block';
   });
 });
 
-// Checkbox mineur et livret de famille
+
+// ------------------------------
+// GESTION DES MINEURS
+// ------------------------------
 const birthdateInput = document.querySelector('input[name="birthdate"]');
-const minorCheckbox = document.getElementById('is_minor');
-const minorFields = document.getElementById('minor_fields');
+const minorCheckbox  = document.getElementById('is_minor');
+const minorFields    = document.getElementById('minor_fields');
+const livretInput    = document.querySelector('input[name="livret_famille"]');
 
 function checkMinor() {
-  const birthdate = birthdateInput.value;
-  if (!birthdate) return;
-  const birth = new Date(birthdate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  
-  if (age < 18) {
-    minorCheckbox.checked = true;
-    minorFields.style.display = 'block';
-  } else {
-    minorCheckbox.checked = false;
-    minorFields.style.display = 'none';
-  }
+    const birthdate = birthdateInput.value;
+    if (!birthdate) return;
+
+    const birth = new Date(birthdate);
+    const today = new Date();
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+
+    if (age < 18) {
+        // Patient mineur
+        minorCheckbox.checked = true;
+        minorCheckbox.disabled = true;
+
+        minorFields.style.display = 'block';
+        livretInput.setAttribute('required', 'required');
+
+    } else {
+        // Patient majeur
+        minorCheckbox.checked = false;
+        minorCheckbox.disabled = false;
+
+        minorFields.style.display = 'none';
+        livretInput.removeAttribute('required');
+        livretInput.value = "";
+    }
 }
 
+// Exécuter quand la date change & au chargement
 birthdateInput.addEventListener('change', checkMinor);
 window.addEventListener('DOMContentLoaded', checkMinor);
 
-// Fonction pour créer ou afficher un message d’erreur sous un champ
+
+// ------------------------------
+// BLOCAGE SI DOCUMENT MANQUANT (mineur)
+// ------------------------------
+form.addEventListener('submit', function(event) {
+
+    // Mineur : livret obligatoire
+    if (minorCheckbox.checked && livretInput.value === "") {
+        alert("⚠ Le livret de famille est obligatoire pour un patient mineur.");
+        event.preventDefault();
+        return false;
+    }
+});
+
+
+// --------------------------------------------------------------
+// VÉRIFICATIONS : Mutuelle / NIR / Téléphone (inchangé mais propre)
+// --------------------------------------------------------------
 function showError(input, message) {
   let error = input.nextElementSibling;
   if (!error || !error.classList.contains('error-msg')) {
@@ -405,7 +495,7 @@ function clearError(input) {
   }
 }
 
-// Limiter numéro d’assurance complémentaire
+// Mutuelle
 const insuranceInput = document.querySelector('input[name="insurance_number"]');
 if (insuranceInput) {
   insuranceInput.addEventListener('input', function() {
@@ -415,7 +505,7 @@ if (insuranceInput) {
   });
 }
 
-// Limiter numéro de sécurité sociale (NIR)
+// NIR
 const nirInput = document.querySelector('input[name="social_number"]');
 if (nirInput) {
   nirInput.addEventListener('input', function() {
@@ -425,21 +515,32 @@ if (nirInput) {
   });
 }
 
-// Limiter téléphone
+// Téléphone
 const phoneInputs = document.querySelectorAll('input[name="phone"], input[name="contact_confiance_tel"], input[name="contact_prevenir_tel"]');
 phoneInputs.forEach(input => {
   input.addEventListener('input', function() {
     let val = this.value;
+
+    // Autoriser un + au début, sinon uniquement chiffres
     if (val.startsWith('+')) {
       val = '+' + val.slice(1).replace(/\D/g, '');
     } else {
       val = val.replace(/\D/g, '');
     }
-    this.value = val.slice(0, 15);
 
-    // Vérification longueur minimale
-    if (val.replace('+','').length < 10) showError(this, "Le numéro doit contenir au moins 10 chiffres.");
-    else clearError(this);
+    // Limiter à 10 chiffres (hors '+')
+    if (val.startsWith('+')) {
+      this.value = '+' + val.slice(1, 11);
+    } else {
+      this.value = val.slice(0, 10);
+    }
+
+    // Vérification minimum
+    if (val.replace('+','').length < 10) {
+      showError(this, "Le numéro doit contenir exactement 10 chiffres.");
+    } else {
+      clearError(this);
+    }
   });
 });
 </script>
