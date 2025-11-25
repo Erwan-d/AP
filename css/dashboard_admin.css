@@ -1,0 +1,150 @@
+/* ====== STYLE GLOBAL ====== */
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* ====== HEADER ====== */
+header {
+    background: #2c3e50;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+
+nav a {
+    color: #fff;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+nav a:hover {
+    color: #1abc9c;
+}
+
+/* ====== BLOCS (Stats, Actions, Tableau, Formulaire) ====== */
+.box {
+    background: #fff;
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* TITRES DES BLOCS */
+.box h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+/* ====== GRILLE POUR STATS ET BOUTONS ====== */
+.grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ====== PETITES CARTES (stat-box, card) ====== */
+.card,
+.stat-box {
+    background: #ecf0f1;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    transition: 0.2s;
+}
+
+/* Harmonisation */
+.stat-box strong {
+    font-size: 1.4em;
+    color: #16a085;
+    margin-top: 10px;
+    display: block;
+}
+
+.card:hover,
+.stat-box:hover {
+    background: #1abc9c;
+    color: black;
+    transform: translateY(-3px);
+}
+
+/* ====== FORMULAIRE ====== */
+form label {
+    font-weight: bold;
+}
+
+form input,
+form select,
+form textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+/* Bouton du formulaire */
+form button {
+    background: #1abc9c;
+    color: black;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+    margin: 15px auto 0;
+    font-size: 1em;
+}
+
+form button:hover {
+    background: #16a085;
+}
+
+/* ====== TABLEAUX ====== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+th {
+    background: #2c3e50;
+    color: #fff;
+}
+
+tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+/* Liens d’action */
+table a {
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #3498db;
+    color: white;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+table a:hover {
+    background: #2980b9;
+}
+
+a.delete {
+    background: #e74c3c;
+}
+
+a.delete:hover {
+    background: #c0392b;
+}
