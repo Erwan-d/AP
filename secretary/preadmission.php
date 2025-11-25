@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'systems/config.php';
+require_once '../systems/config.php';
 
 if (!isset($_SESSION['personnel_id'])) {
     header('Location: ../login.php');

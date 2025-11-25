@@ -12,31 +12,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Vérification du captcha
     if (!isset($_SESSION['captcha_code']) || trim($captcha) !== trim($_SESSION['captcha_code'])) {
         $error = "Captcha incorrect. Veuillez réessayer.";    
+
     } elseif (!empty($personnel_name) && !empty($password)) {
+
         $sql = "SELECT p.*, r.role_name 
                 FROM ap_personnels p
                 JOIN ap_roles r ON p.role_id = r.role_id
                 WHERE p.personnel_name = :personnel_name";
+
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':personnel_name', $personnel_name, PDO::PARAM_STR);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['personnel_id'] = $user['personnel_id'];
-            $_SESSION['personnel_name'] = $user['personnel_name'];
-            $_SESSION['role_id'] = $user['role_id'];
-            $_SESSION['role_name'] = $user['role_name'];
 
+            // On enregistre tout ce dont on a besoin en session
+            $_SESSION['personnel_id']   = $user['personnel_id'];
+            $_SESSION['personnel_name'] = $user['personnel_name'];
+            $_SESSION['role_id']        = $user['role_id'];
+            $_SESSION['role_name']      = $user['role_name'];
+            $_SESSION['service_id']     = $user['service_id'];
+
+            // Sélection role
             if ($user['role_name'] === 'admin') {
                 header("Location: admin_dashboard.php");
                 exit();
-            } elseif ($user['role_name'] === 'secretaire') {
+            } 
+            elseif ($user['role_name'] === 'secretaire') {
                 header("Location: secretary/secretary_dashboard.php");
                 exit();
-            } else {
+            }
+            elseif ($user['role_name'] === 'medecin') {
+                header("Location: doctor/med_dashboard.php");
+                exit();
+            }
+            else {
                 $error = "Votre rôle n'est pas autorisé à accéder au système.";
             }
+
         } else {
             $error = "Nom d'utilisateur ou mot de passe incorrect.";
         }
@@ -45,6 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
