@@ -48,12 +48,13 @@ $count_services     = $pdo->query("SELECT COUNT(*) FROM SERVICES")->fetchColumn(
                 <div class="stat-box">Personnels<br><strong><?= $count_personnels ?></strong></div>
                 <div class="stat-box">Admissions<br><strong><?= $count_admissions ?></strong></div>
                 <div class="stat-box">Services<br><strong><?= $count_services ?></strong></div>
-            </div>
+            </div>>
         </section>
 
         <section class="actions">
             <h2>Gestion des données</h2>
             <div class="cards">
+                <a class="card" href="../secretary/preadmissions.php"> Créer une Pré-admission</a>
                 <a class="card" href="manage_patients.php">Gérer les Patients</a>
                 <a class="card" href="manage_couverture.php"> Gérer la couverture sociale</a>
                 <a class="card" href="manage_personnels.php"> Gérer les Personnels</a>
