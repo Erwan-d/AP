@@ -28,19 +28,23 @@ if (isset($_GET['month']) && preg_match('/^\d{4}-\d{2}$/', $_GET['month'])) {
     $selected_month = $_GET['month'];
 }
 
+// Définir l'intervalle pour le mois sélectionné
+$month_start = $selected_month . '-01';
+$next_month = date('Y-m-d', strtotime($month_start . ' +1 month'));
+
 // Récupération des pré-admissions pour ce service et mois
 $stmt = $pdo->prepare("
-    SELECT pa.preadmission_id, pa.preadmission_date, pa.rdv_heure, pa.notes,
-           pt.nom AS patient_nom, pt.prenom AS patient_prenom
-    FROM ap_preadmissions pa
-    JOIN ap_patients pt ON pa.patient_id = pt.patient_id
-    WHERE pa.service_id = :service_id
-      AND DATE_FORMAT(pa.preadmission_date, '%Y-%m') = :month
-    ORDER BY pa.preadmission_date, pa.rdv_heure
+    SELECT pa.admission_id, pa.hospitalisation_date, pa.intervention_time, pa.notes,
+           pt.lastname AS patient_lastname, pt.firstname AS patient_firstname
+    FROM ap_admission pa
+    JOIN ap_patient pt ON pa.patient_social = pt.social_number
+    WHERE pa.hospitalisation_date >= :month_start
+      AND pa.hospitalisation_date < :next_month
+    ORDER BY pa.hospitalisation_date, pa.intervention_time
 ");
 $stmt->execute([
-    ':service_id' => $service_id,
-    ':month' => $selected_month
+    ':month_start' => $month_start,
+    ':next_month' => $next_month
 ]);
 $rendezvous = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -52,6 +56,10 @@ $rendezvous = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Rendez-vous - Médecin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .past-appointment { background-color: #f8f9fa; } /* gris clair */
+        .future-appointment { background-color: #e6f7ff; } /* bleu clair */
+    </style>
 </head>
 <body class="bg-light">
 
@@ -72,13 +80,14 @@ $rendezvous = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <h2 class="mb-4">Rendez-vous / Pré-admissions du service <?= htmlspecialchars($medecin['service_name']) ?></h2>
 
     <!-- Formulaire de filtrage par mois -->
-    <form method="GET" class="row g-3 mb-4">
+    <form method="GET" class="row g-3 mb-4 align-items-end">
         <div class="col-auto">
             <label for="month" class="form-label">Sélectionner le mois :</label>
             <input type="month" id="month" name="month" value="<?= htmlspecialchars($selected_month) ?>" class="form-control">
         </div>
-        <div class="col-auto align-self-end">
+        <div class="col-auto">
             <button type="submit" class="btn btn-primary">Filtrer</button>
+            <a href="?month=<?= date('Y-m') ?>" class="btn btn-secondary">Aujourd’hui</a>
         </div>
     </form>
 
@@ -95,13 +104,17 @@ $rendezvous = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody>
-                <?php if (count($rendezvous) > 0): ?>
+                <?php if (!empty($rendezvous)): ?>
                     <?php foreach ($rendezvous as $rdv): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($rdv['preadmission_id']) ?></td>
-                            <td><?= htmlspecialchars($rdv['patient_nom'] . ' ' . $rdv['patient_prenom']) ?></td>
-                            <td><?= htmlspecialchars(date('d/m/Y', strtotime($rdv['preadmission_date']))) ?></td>
-                            <td><?= htmlspecialchars($rdv['rdv_heure']) ?></td>
+                        <?php
+                        $datetime = strtotime($rdv['hospitalisation_date'] . ' ' . $rdv['intervention_time']);
+                        $rowClass = ($datetime < time()) ? 'past-appointment' : 'future-appointment';
+                        ?>
+                        <tr class="<?= $rowClass ?>">
+                            <td><?= htmlspecialchars($rdv['admission_id']) ?></td>
+                            <td><?= htmlspecialchars($rdv['patient_lastname'] . ' ' . $rdv['patient_firstname']) ?></td>
+                            <td><?= htmlspecialchars(date('d/m/Y', strtotime($rdv['hospitalisation_date']))) ?></td>
+                            <td><?= htmlspecialchars($rdv['intervention_time']) ?></td>
                             <td><?= htmlspecialchars($rdv['notes']) ?></td>
                         </tr>
                     <?php endforeach; ?>
