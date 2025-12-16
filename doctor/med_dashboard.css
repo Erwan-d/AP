@@ -1,3 +1,20 @@
+
+.dashboard-card {
+    text-decoration: none;
+    border-radius: 1rem;
+    transition: transform .2s ease, box-shadow .2s ease;
+    cursor: pointer;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  }
+  
+  .dashboard-card h5 {
+    font-weight: 600;
+    color: #003366;
+  }
 .dashboard-card {
     text-decoration: none;
     border-radius: 1rem;
