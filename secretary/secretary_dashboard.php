@@ -1,51 +1,110 @@
 <?php
 session_start();
+require_once '../systems/config.php';
 
-// Vérifie que l'utilisateur est connecté
 if (!isset($_SESSION['personnel_id'])) {
-    header("Location: ../login.php");
+    header('Location: login.php');
     exit();
 }
 
-// Vérifie que c’est bien une secrétaire (et non un admin)
+// Vérifie que c’est bien une secrétaire (et non un autre rôle)
 if ($_SESSION['role_id'] == 1) {
     header("Location: ../admin/admin_dashboard.php");
     exit();
 }
 
+if ($_SESSION['role_id'] != 2) {
+    header('Location: ../secretary/secretary_dashboard.php');
+    exit();
+}
+
 $nom = isset($_SESSION['nom']) ? $_SESSION['nom'] : 'Secrétaire';
+
+// Récupération info secrétaire
+$personnel_id = $_SESSION['personnel_id'];
+
+$stmt = $pdo->prepare("SELECT p.personnel_name, p.service_id, s.service_name
+                       FROM ap_personnels p
+                       JOIN ap_services s ON p.service_id = s.service_id
+                       WHERE p.personnel_id = :id");
+$stmt->execute([':id' => $personnel_id]);
+$medecin = $stmt->fetch(PDO::FETCH_ASSOC);
 
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard - Secrétaire</title>
-    <link rel="stylesheet" href="style_secretary.css">
+<meta charset="UTF-8">
+<title>Tableau de bord Secrétaire</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="secretary_dashboard.css">
 </head>
-<body>
-    <div class="dashboard-container">
-        <header>
-            <h1>Bienvenue <?= htmlspecialchars($nom) ?> </h1>
-            <a href="../logout.php" class="logout-btn">Se déconnecter</a>
-        </header>
 
-        <main>
-            <h2>Tableau de bord - Espace Secrétaire</h2>
-            <p>Depuis cet espace, vous pouvez :</p>
-            <ul>
-                <li>Enregistrer une <strong>pré-admission</strong></li>
-                <li>Consulter la liste des <strong>patients</strong></li>
-                <li>Gérer les <strong>rendez-vous</strong></li>
-            </ul>
+<body class="bg-light">
 
-            <div class="actions">
-                <a href="preadmission.php" class="btn-action">Nouvelle pré-admission</a>
-                <a href="patients.php" class="btn-action"> Liste des patients</a>
-                <a href="rdv.php" class="btn-action"> Gestion des RDV</a>
-            </div>
-        </main>
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container-fluid">
+    <span class="navbar-brand">
+      <i class="bi bi-hospital"></i> Clinique LPF – Espace Secrétaire
+    </span>
+    <span class="text-white">
+      <i class="bi bi-person-badge"></i> <?= htmlspecialchars($medecin['personnel_name']) ?> |
+      <a href="../logout.php" class="text-white text-decoration-none"><i class="bi bi-box-arrow-right"></i> Déconnexion</a>
+    </span>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h3 class="text-primary"><i class="bi bi-person-video3"></i> Tableau de bord secrétaire</h3>
+      <p class="text-muted">Bienvenue, <?= htmlspecialchars($medecin['personnel_name']) ?></p>
+
+      <ul class="list-group">
+        <li class="list-group-item">
+          <strong>Service :</strong> <?= htmlspecialchars($medecin['service_name']) ?>
+        </li>
+      </ul>
     </div>
+  </div>
+
+  <div class="row g-4">
+
+    <div class="col-md-4">
+      <a href="secretary_rendezvous.php" class="card text-center dashboard-card">
+        <div class="card-body">
+          <i class="bi bi-calendar-event display-4 text-primary"></i>
+          <h5 class="mt-3">Rendez-vous du service</h5>
+          <p class="text-muted small">Voir les rendez-vous filtrés par mois</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="preadmission.php" class="card text-center dashboard-card">
+        <div class="card-body">
+          <i class="bi bi-clipboard-heart display-4 text-danger"></i>
+          <h5 class="mt-3">Pré-admissions</h5>
+          <p class="text-muted small">Consulter les pré-admissions liées au service</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="search_patient.php" class="card text-center dashboard-card">
+        <div class="card-body">
+          <i class="bi bi-search-heart display-4 text-success"></i>
+          <h5 class="mt-3">Dossier patient</h5>
+          <p class="text-muted small">Rechercher un patient</p>
+        </div>
+      </a>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
