@@ -36,27 +36,30 @@ if (!$pdo) {
    ========================= */
 
 $stmt = $pdo->prepare("
-    SELECT 
-        a.admission_id,
-        a.admission_type,
-        a.hospitalisation_date,
-        a.intervention_time,
-        a.private_room,
-        a.reason,
-        a.notes,
-        a.statut,
-        a.personnel_name,
-        a.patient_social,
+        SELECT 
+            a.admission_id,
+            a.admission_type,
+            a.hospitalisation_date,
+            a.intervention_time,
+            a.private_room,
+            a.reason,
+            a.notes,
+            a.statut,
+            a.patient_social,
 
-        p.lastname,
-        p.firstname,
-        p.birthdate,
-        p.phone,
-        p.email
+            p.lastname,
+            p.firstname,
+            p.birthdate,
+            p.phone,
+            p.email,
 
-    FROM ap_admission a
-    JOIN ap_patient p ON p.social_number = a.patient_social
-    WHERE a.admission_id = ?
+            per.personnel_name
+
+        FROM ap_admission a
+        JOIN ap_patient p ON p.social_number = a.patient_social
+        JOIN ap_personnels per ON per.personnel_id = a.personnel_id
+
+        WHERE a.admission_id = ?
 ");
 $stmt->execute([$admission_id]);
 $data = $stmt->fetch(PDO::FETCH_ASSOC);

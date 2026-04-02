@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function() {
           progressBar.textContent = `${Math.round(progress)}%`;
       }
       
-      // ===== CORRECTION IMPORTANTE : Afficher le livret de famille si nécessaire =====
+      // ===== Afficher le livret de famille si nécessaire =====
       if (n === 2) { // Étape Documents (index 2)
           console.log("Nous sommes à l'étape Documents");
           
@@ -225,6 +225,20 @@ document.addEventListener("DOMContentLoaded", function() {
           insuranceOther.style.display = "block";
       }
   }
+
+  // ===== CHAMP CACHÉ POUR PATIENT MINEUR =====
+let hiddenMinorInput = document.querySelector('input[name="is_minor_hidden"]');
+
+if (!hiddenMinorInput) {
+    hiddenMinorInput = document.createElement("input");
+    hiddenMinorInput.type = "hidden";
+    hiddenMinorInput.name = "is_minor_hidden";
+    
+    const form = document.getElementById("admissionForm");
+    if (form) {
+        form.appendChild(hiddenMinorInput);
+    }
+}
   
   // ===== FORMATAGE ET VALIDATION DU NIR =====
   const nirInput = document.querySelector('input[name="social_number"]');

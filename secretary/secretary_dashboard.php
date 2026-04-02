@@ -1,9 +1,10 @@
 <?php
 session_start();
 require_once '../systems/config.php';
+$pdo = getPDOConnection();
 
 if (!isset($_SESSION['personnel_id'])) {
-    header('Location: login.php');
+    header('Location: index.php');
     exit();
 }
 
