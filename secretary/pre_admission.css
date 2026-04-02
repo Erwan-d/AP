@@ -1,89 +1,433 @@
 /* ========= Clinique LPF - Page de pré-admission ========= */
 
-/* --- Base générale --- */
-body {
-    background-color: #f8fbff;
-    font-family: 'Segoe UI', sans-serif;
+/* --- Reset et base --- */
+.pre-admission-body {
+  background: linear-gradient(135deg, #f8fbff 0%, #e6f0ff 100%) !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  min-height: 100vh;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* --- Container principal --- */
+.pre-admission-container {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* --- Carte principale --- */
+.pre-admission-card {
+  border: none !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  background-color: #fff !important;
+  padding: 2rem !important;
+  margin-bottom: 2rem;
+}
+
+/* --- En-tête --- */
+.pre-admission-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.pre-admission-header h2 {
+  color: #007bff !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem;
+}
+
+.pre-admission-header p {
+  color: #6c757d !important;
+  font-size: 1.1rem;
+}
+
+/* --- Indicateur d'étapes --- */
+.step-indicator-wrapper {
+  margin: 2rem 0;
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #e9ecef;
+  z-index: 1;
+}
+
+.step-indicator .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.step-indicator .step-number {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  border: 3px solid white;
+  transition: all 0.3s ease;
+}
+
+.step-indicator .step.active .step-number {
+  background-color: #007bff !important;
+  color: white !important;
+  transform: scale(1.1);
+}
+
+.step-indicator .step.completed .step-number {
+  background-color: #28a745 !important;
+  color: white !important;
+}
+
+.step-indicator .step-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  text-align: center;
+  max-width: 80px;
+}
+
+.step-indicator .step.active .step-label {
+  color: #007bff !important;
+  font-weight: 600;
+}
+
+/* --- Barre de progression linéaire --- */
+.pre-admission-progress {
+  height: 8px !important;
+  background-color: #f0f0f0 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  margin-bottom: 2rem;
+}
+
+.pre-admission-progress-bar {
+  background: linear-gradient(90deg, #007bff 0%, #00a8ff 100%) !important;
+  transition: width 0.6s ease !important;
+  height: 100% !important;
+}
+
+/* --- Étapes du formulaire --- */
+.form-step-container .form-step {
+  display: none;
+  animation: fadeIn 0.5s ease;
+}
+
+.form-step-container .form-step.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(10px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+/* --- Titres de section --- */
+.pre-admission-section-title {
+  border-left: 5px solid #007bff !important;
+  padding-left: 15px !important;
+  font-weight: 700 !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1.5rem !important;
+  color: #003366 !important;
+  font-size: 1.4rem !important;
+}
+
+.pre-admission-section-title i {
+  color: #007bff !important;
+  margin-right: 10px;
+}
+
+/* --- Groupes de formulaire améliorés --- */
+.pre-admission-form-group {
+  margin-bottom: 1.5rem !important;
+}
+
+.pre-admission-form-group label {
+  font-weight: 500 !important;
+  margin-bottom: 0.5rem !important;
+  color: #495057 !important;
+  display: block;
+}
+
+/* --- Badge d'information --- */
+.pre-admission-info-badge {
+  background-color: #e7f1ff !important;
+  border-left: 4px solid #007bff !important;
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 1.5rem !important;
+  color: #0066cc !important;
+}
+
+.pre-admission-info-badge i {
+  margin-right: 8px;
+}
+
+/* --- Zone de téléchargement de documents --- */
+.pre-admission-document-upload {
+  border: 2px dashed #dee2e6 !important;
+  border-radius: 0.75rem !important;
+  padding: 1.5rem !important;
+  text-align: center !important;
+  background-color: #f8f9fa !important;
+  transition: all 0.3s ease !important;
+  margin-bottom: 1rem;
+}
+
+.pre-admission-document-upload:hover {
+  border-color: #007bff !important;
+  background-color: #f0f8ff !important;
+}
+
+.pre-admission-document-upload i {
+  font-size: 2.5rem !important;
+  margin-bottom: 1rem !important;
+  display: block;
+}
+
+.pre-admission-document-upload h6 {
+  color: #343a40 !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* --- Carte de contact --- */
+.pre-admission-contact-card {
+  background-color: #f8f9fa !important;
+  border-radius: 0.75rem !important;
+  padding: 1.5rem !important;
+  border: 1px solid #e9ecef !important;
+  height: 100%;
+}
+
+.pre-admission-contact-card h6 {
+  color: #007bff !important;
+  font-weight: 600 !important;
+  margin-bottom: 1.5rem !important;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+/* --- Messages d'erreur --- */
+.pre-admission-error {
+  color: #dc3545 !important;
+  font-size: 0.875rem !important;
+  margin-top: 0.25rem !important;
+  display: none;
+}
+
+.pre-admission-field-error {
+  border-color: #dc3545 !important;
+}
+
+/* --- Navigation --- */
+.pre-admission-navigation {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin-top: 2rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 1px solid #e9ecef !important;
+}
+
+.pre-admission-step-indicator-text {
+  font-weight: 500 !important;
+  color: #6c757d !important;
+  margin-right: 1rem;
+}
+
+/* --- Boutons personnalisés --- */
+.btn-pre-admission-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056d2 100%) !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.btn-pre-admission-primary:hover {
+  background: linear-gradient(135deg, #0056d2 0%, #0041a8 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3) !important;
+}
+
+.btn-pre-admission-outline {
+  border: 2px solid #6c757d !important;
+  border-radius: 50px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  color: #6c757d !important;
+  background: transparent !important;
+}
+
+.btn-pre-admission-outline:hover {
+  border-color: #495057 !important;
+  color: #495057 !important;
+  background-color: rgba(108, 117, 125, 0.05) !important;
+}
+
+/* --- Champs de formulaire personnalisés --- */
+.pre-admission-input,
+.pre-admission-select,
+.pre-admission-textarea {
+  border: 2px solid #e9ecef !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  width: 100%;
+}
+
+.pre-admission-input:focus,
+.pre-admission-select:focus,
+.pre-admission-textarea:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.15) !important;
+  outline: none !important;
+}
+
+.pre-admission-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* --- Style pour les champs obligatoires --- */
+.pre-admission-required::after {
+  content: " *";
+  color: #dc3545;
+}
+
+/* --- Alerts personnalisés --- */
+.pre-admission-alert {
+  border-radius: 1rem !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+  padding: 1rem 1.5rem !important;
+}
+
+.pre-admission-alert-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+  color: white !important;
+}
+
+.pre-admission-alert-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%) !important;
+  color: white !important;
+}
+
+/* --- Badges --- */
+.pre-admission-badge {
+  padding: 0.35em 0.65em !important;
+  font-size: 0.75em !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  display: inline-block;
+}
+
+.pre-admission-badge-info {
+  background-color: #17a2b8 !important;
+  color: white !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .pre-admission-card {
+      padding: 1.5rem !important;
+      border-radius: 1rem !important;
   }
   
-  .container {
-    max-width: 950px;
+  .step-indicator .step-label {
+      font-size: 0.75rem;
+      max-width: 60px;
   }
   
-  /* --- Carte principale --- */
-  .card {
-    border: none;
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
+  .step-indicator .step-number {
+      width: 30px;
+      height: 30px;
+      font-size: 0.9rem;
   }
   
-  /* --- Progression --- */
-  .progress {
-    height: 20px;
-    background-color: #e9ecef;
-    border-radius: 10px;
-    overflow: hidden;
+  .btn-pre-admission-primary,
+  .btn-pre-admission-outline {
+      padding: 0.6rem 1.5rem !important;
+      font-size: 0.9rem !important;
   }
   
-  .progress-bar {
-    background-color: #007bff;
-    transition: width 0.4s ease;
-    font-weight: 600;
+  .pre-admission-section-title {
+      font-size: 1.2rem !important;
   }
   
-  /* --- Titres de section --- */
-  .section-title {
-    border-left: 4px solid #007bff;
-    padding-left: 10px;
-    font-weight: 600;
-    margin-top: 30px;
-    color: #003366;
+  .pre-admission-document-upload {
+      padding: 1rem !important;
   }
   
-  /* --- Boutons --- */
-  .btn-primary {
-    background-color: #007bff;
-    border: none;
-    transition: background-color 0.3s ease;
+  .pre-admission-document-upload i {
+      font-size: 2rem !important;
   }
   
-  .btn-primary:hover {
-    background-color: #0056d2;
+  .pre-admission-contact-card {
+      padding: 1rem !important;
   }
   
-  /* --- Champs de formulaire --- */
-  input, select, textarea {
-    border-radius: .5rem !important;
+  .pre-admission-navigation {
+      flex-direction: column !important;
+      gap: 1rem !important;
   }
   
-  /* --- Messages --- */
-  .alert {
-    border-radius: .5rem;
+  .pre-admission-navigation > div {
+      order: -1;
+      margin-bottom: 1rem;
+      text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .pre-admission-body {
+      padding-top: 10px;
+      padding-bottom: 10px;
   }
   
-  /* --- Titres et textes --- */
-  h2 {
-    font-weight: 600;
-    color: #007bff;
+  .step-indicator {
+      gap: 0.5rem;
   }
   
-  h4.section-title i {
-    margin-right: 8px;
+  .step-indicator .step-label {
+      max-width: 50px;
   }
   
-  h6 {
-    font-weight: 500;
-    color: #004080;
+  .pre-admission-info-badge {
+      font-size: 0.9rem;
+      padding: 0.5rem !important;
   }
-  
-  /* --- Responsive (mobile) --- */
-  @media (max-width: 768px) {
-    .card {
-      padding: 1.2rem;
-    }
-    .progress {
-      height: 16px;
-    }
-  }
-  
+}

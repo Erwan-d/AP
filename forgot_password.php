@@ -1,28 +1,30 @@
 <?php
-require_once 'config.php';
+require_once 'systems/config.php';
 $error = "";
 $success = "";
+
+$pdo = getPDOConnection();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $personnel_name = trim($_POST['personnel_name']);
 
     if (!empty($personnel_name)) {
-        // Vérifie si le personnel existe
         $stmt = $pdo->prepare("SELECT personnel_id, personnel_name FROM ap_personnels WHERE personnel_name = ?");
         $stmt->execute([$personnel_name]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user) {
-            // Génère un token et une date d’expiration
-            $token = bin2hex(random_bytes(32));
-            $expires = date("Y-m-d H:i:s", strtotime('+1 hour'));
+            $token   = bin2hex(random_bytes(32));
+            $expires = (new DateTime('+1 hour', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
 
-            // Enregistre le token dans la base
             $update = $pdo->prepare("UPDATE ap_personnels SET reset_token = ?, reset_expires = ? WHERE personnel_id = ?");
             $update->execute([$token, $expires, $user['personnel_id']]);
 
-            // Génère le lien de réinitialisation
-            $resetLink = "http://localhost/clinique/reset_password.php?token=$token";
+            // Détection automatique : http(s)://domaine-ou-ip/clinique/
+            $scheme    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host      = $_SERVER['SERVER_ADDR']; // ex: localhost, 192.168.1.10
+            $basePath  = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            $resetLink = "$scheme://$host$basePath/reset_password.php?token=$token";
 
             $success = "Un lien de réinitialisation a été généré :<br><a href='$resetLink'>$resetLink</a>";
         } else {
@@ -54,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <button type="submit">Réinitialiser le mot de passe</button>
     </form>
 
-    <p><a href="login.php">← Retour à la connexion</a></p>
+    <p><a href="index.php">← Retour à la connexion</a></p>
 </div>
 </body>
 </html>
