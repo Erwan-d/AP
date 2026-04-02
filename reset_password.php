@@ -1,132 +1,125 @@
 <?php
 require_once 'systems/config.php';
-$error = "";
+$pdo = getPDOConnection();
+
+$error   = "";
 $success = "";
+$user    = null;
 
-if (isset($_GET['token'])) {
-    $token = $_GET['token'];
+$token = trim($_GET['token'] ?? '');
 
-    // Vérifie si le token est valide
-    $stmt = $pdo->prepare("SELECT personnel_id FROM ap_personnels WHERE reset_token = ? AND reset_expires > NOW()");
-    $stmt->execute([$token]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+if (empty($token)) {
+    die("Token manquant.");
+}
 
-    if ($user) {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $password = trim($_POST['password']);
-            $confirm = trim($_POST['confirm']);
+// -------------------------------------------------------
+// Récupération du token — sans filtrer sur la date en SQL
+// pour éviter les problèmes de timezone PHP vs MariaDB
+// -------------------------------------------------------
+$stmt = $pdo->prepare("
+    SELECT personnel_id, personnel_name, reset_token, reset_expires
+    FROM ap_personnels
+    WHERE reset_token = ?
+");
+$stmt->execute([$token]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($password === $confirm && strlen($password) >= 6) {
-                $hashed = password_hash($password, PASSWORD_DEFAULT);
+// Vérification en PHP (tout en UTC pour cohérence)
+$tokenValid = false;
+if ($user && !empty($user['reset_expires'])) {
+    $now     = new DateTime('now', new DateTimeZone('UTC'));
+    $expires = new DateTime($user['reset_expires'], new DateTimeZone('UTC'));
+    $tokenValid = ($expires > $now);
+}
 
-                // Met à jour le mot de passe et supprime le token
-                $update = $pdo->prepare("UPDATE ap_personnels SET password = ?, reset_token = NULL, reset_expires = NULL WHERE personnel_id = ?");
-                $update->execute([$hashed, $user['personnel_id']]);
+if (!$user) {
+    $error = "Ce lien de réinitialisation est invalide.";
+} elseif (!$tokenValid) {
+    $error = "Ce lien a expiré. Veuillez en générer un nouveau.";
+}
 
-                $success = "Votre mot de passe a été réinitialisé avec succès. <a href='login.php'>Se connecter</a>";
-            } else {
-                $error = "Les mots de passe ne correspondent pas ou sont trop courts.";
-            }
-        }
-    } else {
-        $error = "Le lien de réinitialisation est invalide ou expiré.";
+// -------------------------------------------------------
+// Traitement du formulaire POST
+// -------------------------------------------------------
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $password = ($_POST['password'] ?? '');
+    $confirm  = ($_POST['confirm']   ?? '');
+
+    $errors = [];
+
+    if (strlen($password) < 12) {
+        $errors[] = "au moins 12 caractères";
     }
-} else {
-    $error = "Aucun token fourni.";
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = "au moins une majuscule";
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = "au moins une minuscule";
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = "au moins un chiffre";
+    }
+    if (!preg_match('/[\W_]/', $password)) {
+        $errors[] = "au moins un caractère spécial (!@#$%^&*...)";
+    }
+    if ($password !== $confirm) {
+        $errors[] = "les mots de passe ne correspondent pas";
+    }
+
+    if (!empty($errors)) {
+        $error = "Le mot de passe doit contenir : " . implode(", ", $errors) . ".";
+    } else {
+        $hashed = password_hash($password, PASSWORD_DEFAULT);
+        $update = $pdo->prepare("
+            UPDATE ap_personnels
+            SET password = ?, reset_token = NULL, reset_expires = NULL
+            WHERE personnel_id = ?
+        ");
+        $update->execute([$hashed, $user['personnel_id']]);
+
+        $success    = "Mot de passe réinitialisé avec succès. <a href='index.php'>Se connecter</a>";
+        $tokenValid = false;
+    }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Réinitialiser le mot de passe</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Réinitialisation du mot de passe</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="login-container">
-    <h1>Réinitialisation du mot de passe</h1>
-    <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <?php if ($success): ?><div class="success"><?= $success ?></div><?php endif; ?>
+    <h1>Nouveau mot de passe</h1>
 
-    <?php if (isset($user) && $user && !$success): ?>
-    <form method="POST" action="">
+    <?php if ($error): ?>
+        <div class="error"><?= htmlspecialchars($error) ?></div>
+        <p><a href="forgot_password.php">← Générer un nouveau lien</a></p>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="success"><?= $success ?></div>
+    <?php endif; ?>
+
+    <?php if ($tokenValid && !$success): ?>
+        <form method="POST" action="">
         <label for="password">Nouveau mot de passe</label>
-        <input type="password" name="password" required>
+        <input type="password" id="password" name="password" required minlength="12">
+        <ul class="password-rules" style="font-size:.85rem; color:#666; margin-top:.4rem; padding-left:1.2rem;">
+            <li>12 caractères minimum</li>
+            <li>Une majuscule (A–Z)</li>
+            <li>Une minuscule (a–z)</li>
+            <li>Un chiffre (0–9)</li>
+            <li>Un caractère spécial (!@#$%^&amp;*...)</li>
+        </ul>
 
-        <label for="confirm">Confirmer le mot de passe</label>
-        <input type="password" name="confirm" required>
+            <label for="confirm">Confirmer le mot de passe</label>
+            <input type="password" id="confirm" name="confirm" required minlength="12">
 
-        <button type="submit">Changer le mot de passe</button>
-    </form>
+            <button type="submit">Réinitialiser</button>
+        </form>
     <?php endif; ?>
 </div>
 </body>
 </html>
-
-<?php
-require_once 'systems/config.php';
-$error = "";
-$success = "";
-
-if (isset($_GET['token'])) {
-    $token = $_GET['token'];
-
-    // Vérifie si le token est valide
-    $stmt = $pdo->prepare("SELECT personnel_id FROM ap_personnels WHERE reset_token = ? AND reset_expires > NOW()");
-    $stmt->execute([$token]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user) {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $password = trim($_POST['password']);
-            $confirm = trim($_POST['confirm']);
-
-            if ($password === $confirm && strlen($password) >= 6) {
-                $hashed = password_hash($password, PASSWORD_DEFAULT);
-
-                // Met à jour le mot de passe et supprime le token
-                $update = $pdo->prepare("UPDATE ap_personnels SET password = ?, reset_token = NULL, reset_expires = NULL WHERE personnel_id = ?");
-                $update->execute([$hashed, $user['personnel_id']]);
-
-                $success = "Votre mot de passe a été réinitialisé avec succès. <a href='login.php'>Se connecter</a>";
-            } else {
-                $error = "Les mots de passe ne correspondent pas ou sont trop courts.";
-            }
-        }
-    } else {
-        $error = "Le lien de réinitialisation est invalide ou expiré.";
-    }
-} else {
-    $error = "Aucun token fourni.";
-}
-?>
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Réinitialiser le mot de passe</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="login-container">
-    <h1>Réinitialisation du mot de passe</h1>
-    <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <?php if ($success): ?><div class="success"><?= $success ?></div><?php endif; ?>
-
-    <?php if (isset($user) && $user && !$success): ?>
-    <form method="POST" action="">
-        <label for="password">Nouveau mot de passe</label>
-        <input type="password" name="password" required>
-
-        <label for="confirm">Confirmer le mot de passe</label>
-        <input type="password" name="confirm" required>
-
-        <button type="submit">Changer le mot de passe</button>
-    </form>
-    <?php endif; ?>
-</div>
-</body>
-</html>
-
