@@ -1,5 +1,5 @@
 <?php
-$host = "192.168.20.43";
+$host = "192.168.10.6";
 $dbname = "clinique_lpf";
 $username = "clinique";
 $password = "CliniqueLPF123!";
